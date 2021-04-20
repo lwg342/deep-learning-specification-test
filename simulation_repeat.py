@@ -9,11 +9,11 @@ from importlib import reload
 reload(utils)
 
 N = 1000
-
+num_repeat = 30000
 
 def true_output(x1, x2, x3, x4):
-    y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
-    # y = x1 + 2* x2 + 3 * x3 + 4*x4
+    # y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
+    y = x1 + 2* x2 + 3 * x3 + 4*x4
     return y
 
 
@@ -56,9 +56,9 @@ def repeat():
 
     net = Net()
     # print(net(x)[0:5])
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.02)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
     loss_func = torch.nn.MSELoss()  
-    for t in range(10000):
+    for t in range(num_repeat):
         prediction = net(x)     # input x and predict based on x
 
         loss = loss_func(prediction, y)     # must be (1. nn output, 2. target)
@@ -69,6 +69,8 @@ def repeat():
         optimizer.step()        # apply gradients
 
         if t == 1:
+            print(loss)
+        if t == num_repeat-1:
             print(loss)
 
     # Test the Escanciano method
@@ -90,12 +92,11 @@ def repeat():
     test_statistic = utils.test_statistic
     rslt = test_statistic(C, N)
     
-    optimizer.zero_grad()
 
     return rslt
 # %%
 rslt_repeat = []
-for j in range(2):
-    rslt_repeat += repeat()
-
+for j in range(100):
+    rslt_repeat += [repeat()]
+print(rslt_repeat)
 # %%
