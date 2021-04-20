@@ -7,7 +7,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 # %%
-torch.manual_seed(1)    # reproducible
+# torch.manual_seed(1)    # reproducible
 
 N = 1000
 
@@ -18,7 +18,8 @@ e = torch.rand(N)
 
 
 def true_output(x1, x2):
-    y = x1.pow(2) + 2* torch.sin(x2) + x1*x2
+    # y = x1.pow(2) + 2* torch.sin(x2) + x1*x2
+    y = x1 + 2* x2 
     return y
 
 
@@ -113,6 +114,9 @@ fig.show()
 # %%
 plt.scatter(x[:,0], y)
 plt.scatter(x[:,0], net(x).detach().numpy())
+plt.figure()
+plt.scatter(x[:,1], y)
+plt.scatter(x[:,1], net(x).detach().numpy())
 # %%
 
 from wl_regression import loc_poly
@@ -124,19 +128,19 @@ ax.scatter(fl_vals[0, :], fl_vals[1, :],ll_z)
 fig.show()
 # %%
 # True Loss 
-loss_func(ll_z, true_output(fl_vals[0, :], fl_vals[1, :]))
+# loss_func(ll_z, true_output(fl_vals[0, :], fl_vals[1, :]))
 
 # %%
 
 # Test the Escanciano method
 from wl_regression import OLS  
 z0 = OLS(x.numpy(), y.numpy()).y_hat()
-# e0 = (z0 - y.detach().numpy()[:,0])
+e0 = (z0 - y.detach().numpy()[:,0])
 
 
-from wl_regression import loc_poly
-ll_z = loc_poly(y.numpy(), x.numpy(), x.detach().numpy())
-e0 = (ll_z - y.detach().numpy()[:,0])
+# from wl_regression import loc_poly
+# ll_z = loc_poly(y.numpy(), x.numpy(), x.detach().numpy())
+# e0 = (ll_z - y.detach().numpy()[:,0])
 
 
 z = net(x)
@@ -148,7 +152,8 @@ from importlib import reload
 reload(utils)
 C_resid = utils.C_resid
 C = C_resid(e0, e1, e0, N)
-# print(C)
+plt.plot(C)
+print(C)
 # %%
 
 test_statistic = utils.test_statistic
