@@ -7,13 +7,14 @@ import numpy as np
 import utils 
 from importlib import reload  
 reload(utils)
+import time
 
 N = 1000
-num_repeat = 30000
+num_repeat = 20000
 
-def true_output(x1, x2, x3, x4):
+def true_output(x):
     # y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
-    y = x1 + 2* x2 + 3 * x3 + 4*x4
+    y = x[:,0] + 2* x[:,1] + 3 * x[:,2] + 4*x[:,3]
     return y
 
 
@@ -36,44 +37,50 @@ class Net(nn.Module):
 
 
 def repeat():
-    
-    rng = np.random.default_rng()
 
-
-    x1 = torch.from_numpy(rng.normal(0, 1, N))
-    x2 = torch.from_numpy(rng.normal(0, 1, N))
-    x3 = torch.from_numpy(rng.normal(0, 1, N))
-    x4 = torch.from_numpy(rng.normal(0, 1, N))
+    x = torch.normal(0,1,size = [1000,4])
     e = 0.2*torch.randn(N)
-
-
-    y = (true_output(x1, x2, x3, x4) + e).unsqueeze(-1).float()
-    x1.unsqueeze(-1).float()
-    x2.unsqueeze(-1).float()
-    x3.unsqueeze(-1).float()
-    x4.unsqueeze(-1).float()
-    x = torch.stack((x1, x2, x3, x4)).transpose(0, 1).float()
+    y = (true_output(x) + e).unsqueeze(-1).float()
 
     net = Net()
-    # print(net(x)[0:5])
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
+    
+    if torch.cuda.is_available():
+        x = x.cuda(0)
+        y = y.cuda(0)
+        net = net.cuda()
+
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.02)
     loss_func = torch.nn.MSELoss()  
+    
     for t in range(num_repeat):
+
         prediction = net(x)     # input x and predict based on x
-
         loss = loss_func(prediction, y)     # must be (1. nn output, 2. target)
-
-
         optimizer.zero_grad()   # clear gradients for next train
         loss.backward()         # backpropagation, compute gradients
         optimizer.step()        # apply gradients
 
-        if t == 1:
-            print(loss)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
+    loss_func = torch.nn.MSELoss()
+
+    for t in range(num_repeat):
+
+        prediction = net(x)     # input x and predict based on x
+        loss = loss_func(prediction, y)     # must be (1. nn output, 2. target)
+        optimizer.zero_grad()   # clear gradients for next train
+        loss.backward()         # backpropagation, compute gradients
+        optimizer.step()        # apply gradients
+
         if t == num_repeat-1:
             print(loss)
 
+
     # Test the Escanciano method
+    
+    if torch.cuda.is_available():
+        y = y.cpu()
+        z = net(x).cpu()
+
     from wl_regression import OLS  
     z0 = OLS(x.numpy(), y.numpy()).y_hat()
     e0 = (z0 - y.detach().numpy()[:,0])
@@ -95,8 +102,12 @@ def repeat():
 
     return rslt
 # %%
+start = time.time()
 rslt_repeat = []
 for j in range(100):
     rslt_repeat += [repeat()]
 print(rslt_repeat)
+end = time.time()
+# %%
+print(end - start)
 # %%
