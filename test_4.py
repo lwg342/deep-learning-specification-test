@@ -20,7 +20,8 @@ e = 0.2*torch.randn(N)
 
 
 def true_output(x1, x2, x3, x4):
-    y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
+    # y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
+    y = x1 + 2* x2 + 3 * x3 + 4*x4
     return y
 
 
@@ -65,7 +66,7 @@ optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
 loss_func = torch.nn.MSELoss()  
 # %%
 
-for t in range(1000):
+for t in range(10000):
     prediction = net(x)     # input x and predict based on x
 
     loss = loss_func(prediction, y)     # must be (1. nn output, 2. target)
@@ -77,5 +78,35 @@ for t in range(1000):
 
     if t % 100 == 0:
         print(loss)
+# %%
+plt.plot(y,net(x))
+
+# %%
+
+# Test the Escanciano method
+from wl_regression import OLS  
+z0 = OLS(x.numpy(), y.numpy()).y_hat()
+e0 = (z0 - y.detach().numpy()[:,0])
+
+z = net(x)
+e1 = (z-y).detach().numpy()
+
+from wl_regression import loc_poly
+ll_z = loc_poly(y.numpy(), x.numpy(), x.detach().numpy())
+e2 = (ll_z - y.detach().numpy()[:,0])
+
+# %%
+import utils 
+from importlib import reload  
+reload(utils)
+C_resid = utils.C_resid
+C = C_resid(e0, e1, e0, N)
+plt.plot(C)
+print(C)
+# %%
+
+test_statistic = utils.test_statistic
+rslt = test_statistic(C, N)
+print(rslt)
 # %%
 
