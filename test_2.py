@@ -127,3 +127,31 @@ fig.show()
 loss_func(ll_z, true_output(fl_vals[0, :], fl_vals[1, :]))
 
 # %%
+
+# Test the Escanciano method
+from wl_regression import OLS  
+z0 = OLS(x.numpy(), y.numpy()).y_hat()
+# e0 = (z0 - y.detach().numpy()[:,0])
+
+
+from wl_regression import loc_poly
+ll_z = loc_poly(y.numpy(), x.numpy(), x.detach().numpy())
+e0 = (ll_z - y.detach().numpy()[:,0])
+
+
+z = net(x)
+e1 = (z-y).detach().numpy()
+
+# %%
+import utils 
+from importlib import reload  
+reload(utils)
+C_resid = utils.C_resid
+C = C_resid(e0, e1, e0, N)
+# print(C)
+# %%
+
+test_statistic = utils.test_statistic
+rslt = test_statistic(C, N)
+print(rslt)
+# %%

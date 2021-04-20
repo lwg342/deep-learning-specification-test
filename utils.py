@@ -8,9 +8,7 @@ def C_resid(e0 , e1, y, T, option = None):
     return C
 
 
-def test_statistic(T, sigma_hat=1, method="CM"):
+def test_statistic(C, T, sigma_hat=1, method="CM"):
     if method == "CM":
-        rslt = 3/sigma_hat /T 
-    
-    
+        rslt = 3/sigma_hat /T * np.inner(C,C)
     return rslt
