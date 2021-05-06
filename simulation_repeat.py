@@ -16,7 +16,7 @@ from importlib import reload
 reload(utils)
 import time
 
-N = 1000
+N = 200
 num_repeat = 20000
 
 def true_output(x):
@@ -56,7 +56,7 @@ def repeat():
         y = y.cuda(0)
         net = net.cuda()
 
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.02)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     loss_func = torch.nn.MSELoss()  
     
     for t in range(num_repeat):
@@ -104,8 +104,8 @@ def repeat():
     # print(C)
 
     test_statistic = utils.test_statistic
-    rslt = test_statistic(C, N)
-    
+    sigma_hat = utils.compute_w(x, y, e0, e1, N)[1]
+    rslt = test_statistic(C, N, sigma_hat)
 
     return rslt
 # %%
@@ -118,3 +118,13 @@ end = time.time()
 # %%
 print(end - start)
 # %%
+import pickle
+from google.colab import files
+
+rslt_repeat = [repeat(j) for j in range(100)]
+
+i = time.strftime("%Y%m%d%H")
+with open(f"result-{i}.p", mode = 'wb') as f:
+  pickle.dump(rslt_repeat, f)
+
+files.download(f'result-{i}.p')

@@ -7,7 +7,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 # %%
-torch.manual_seed(1)    # reproducible
+# torch.manual_seed(1)    # reproducible
 
 N = 200
 rng = np.random.default_rng()
@@ -20,7 +20,7 @@ e = 0.2*torch.randn(N)
 
 def true_output(x1, x2, x3, x4):
     # y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
-    y = x1 + 2* x2 + 3 * x3 + 4*x4
+    y = x1 + 2 * (x2) + 3 * x3 + 4*x4
     return y
 
 
@@ -61,7 +61,8 @@ net = Net()
 print(net(x)[0:5])
 # %%
 
-optimizer = torch.optim.SGD(net.parameters(), lr=0.01)
+# optimizer = torch.optim.SGD(net.parameters(), lr=0.0005)
+optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
 loss_func = torch.nn.MSELoss()  
 # %%
 
@@ -78,7 +79,7 @@ for t in range(10000):
     if t % 100 == 0:
         print(loss)
 # %%
-plt.plot(y,net(x))
+plt.scatter(y,net(x).detach().numpy())
 
 # %%
 
@@ -88,7 +89,10 @@ z0 = OLS(x.numpy(), y.numpy()).y_hat()
 e0 = (z0 - y.detach().numpy()[:,0])
 
 z = net(x)
-e1 = (z-y).detach().numpy()
+e1 = (z-y).transpose(1,0).detach().numpy()
+
+plt.scatter(y,e0)
+plt.scatter(y,e1)
 
 from wl_regression import loc_poly
 ll_z = loc_poly(y.numpy(), x.numpy(), x.detach().numpy())
@@ -99,13 +103,13 @@ import utils
 from importlib import reload  
 reload(utils)
 C_resid = utils.C_resid
-C = C_resid(e0, e1, e0, N)
+C, d0, d1= C_resid(e0, e1, e0, N,"full")
 plt.plot(C)
 print(C)
 # %%
-
+sigma_hat = utils.compute_w(x,y,torch.tensor(e0),torch.tensor(e1),N)[1]
 test_statistic = utils.test_statistic
-rslt = test_statistic(C, N)
-print(rslt)
+rslt = test_statistic(C, N, sigma_hat)
+print(sigma_hat, rslt)
 # %%
-
+# %%
