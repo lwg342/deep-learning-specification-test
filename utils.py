@@ -5,8 +5,11 @@ def C_resid(e0 , e1, y, T, option = None):
     y_mat = np.outer(y, np.ones(T))
     d0 = (y_mat - np.outer(np.ones(len(y)), e0)).clip(0)
     d1 = (y_mat - np.outer(np.ones(len(y)), e1)).clip(0)
-    C = 1/np.sqrt(T) * ((d0 - d1).sum(1))
-    return C
+    C = (1/np.sqrt(T)) * ((d0 - d1).sum(1))
+    if option == "full":    
+        return C, d0 ,d1
+    else:
+        return C
 
 
 def compute_l(x, y, e, T, method="ols"):
@@ -18,12 +21,13 @@ def compute_l(x, y, e, T, method="ols"):
         l = e 
     return l
 
-def compute_w(x,y,e,T, methods = ["ols", "deep learning"]):
-    lst_W = [compute_l(x,y,e,T,i) for i in methods]
-    W = lst_W[0] - lst_W[1]
+def compute_w(x,y,e0, e1,T, methods = ["ols", "deep learning"]):
+    W0 = compute_l(x, y, e0, T, methods[0])
+    W1 = compute_l(x, y, e1, T, methods[1])
+    W = W0 - W1
     return W, torch.std(W)
 
 def test_statistic(C, T, sigma_hat, method="CM"):
     if method == "CM":
-        rslt = 3/sigma_hat /T * np.inner(C,C)
+        rslt = 3/(sigma_hat)**2 / T * np.inner(C, C)
     return rslt
