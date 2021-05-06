@@ -43,8 +43,8 @@ class Net(nn.Module):
         return out
 
 
-def repeat():
-
+def repeat(j):
+    start = time.time()
     x = torch.normal(0,1,size = [1000,4])
     e = 0.2*torch.randn(N)
     y = (true_output(x) + e).unsqueeze(-1).float()
@@ -107,16 +107,9 @@ def repeat():
     sigma_hat = utils.compute_w(x, y, e0, e1, N)[1]
     rslt = test_statistic(C, N, sigma_hat)
 
+    end = time.time()
+    print(f"{j}-th iter in time {end - start}")
     return rslt
-# %%
-start = time.time()
-rslt_repeat = []
-for j in range(100):
-    rslt_repeat += [repeat()]
-print(rslt_repeat)
-end = time.time()
-# %%
-print(end - start)
 # %%
 import pickle
 from google.colab import files
