@@ -11,7 +11,7 @@ x,y,e = utils_simulation.generate_sample(N, k = 4, sigma = 0.5)
 plt.scatter(x[:,0], y)
 plt.scatter(x[:,1], y)
 
-M = utils.wl_nn(utils.MLP4, lr = 0.0001)
+M = utils.DNN(utils.MLP4, lr = 0.001)
 # %%
 
 M.net_update(x,y,batch_size=10000)
@@ -20,12 +20,13 @@ plt.scatter(y,M.net(x).detach())
 # %%
 
 # Test the Escanciano method
-from wl_regression import OLS  
-z0 = OLS(x.numpy(), y.numpy()).y_hat()
-e0 = (z0 - y.detach().numpy()[:,0])
+from wl_regression import OLS
+z0 = torch.tensor(OLS(x.numpy(), y.numpy()).y_hat())
+e0 = (z0 - y).detach()
 
 z = M.net(x)
-e1 = (z-y).transpose(1,0).detach().numpy()
+e1 = (z.squeeze()-y).detach().float()
+    
 
 plt.scatter(y,e0)
 plt.scatter(y,e1)
@@ -40,7 +41,7 @@ reload(utils)
 C, d0, d1 = utils.C_resid(e0, e1, e0, N, "full")
 plt.plot(C)
 # %%
-sigma_hat = utils.compute_w(x,y,torch.tensor(e0),torch.tensor(e1),N)[1]
+sigma_hat = utils.compute_w(x,y,e0,e1,N)[1]
 rslt =utils.test_statistic(C, N, sigma_hat)
 print(sigma_hat, rslt)
 # %%
