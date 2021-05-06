@@ -1,4 +1,14 @@
 # %%
+from importlib import reload
+import utils
+from google.colab import files
+import pickle
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import torch.nn as nn
+import torch.nn.functional as F
+import torch
 import sys
 from google.colab import drive
 drive.mount("/content/drive")
@@ -6,22 +16,15 @@ sys.path.append(
     "/content/drive/My Drive/Colab Notebooks/deep-learning-specification-test")
 sys.path.append("/content/drive/My Drive/Colab Notebooks/python-functions")
 # %%
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
-import matplotlib.pyplot as plt
-import numpy as np
-import utils 
-from importlib import reload  
 reload(utils)
-import time
 
 N = 200
 num_repeat = 20000
 
+
 def true_output(x):
     # y = x1.pow(2) + 2* torch.sin(x2) + x1*x2 + x3 * x4
-    y = x[:,0] + 2* x[:,1] + 3 * x[:,2] + 4*x[:,3]
+    y = x[:, 0] + 2 * x[:, 1] + 3 * x[:, 2] + 4*x[:, 3]
     return y
 
 
@@ -45,20 +48,20 @@ class Net(nn.Module):
 
 def repeat(j):
     start = time.time()
-    x = torch.normal(0,1,size = [1000,4])
+    x = torch.normal(0, 1, size=[N, 4])
     e = 0.2*torch.randn(N)
     y = (true_output(x) + e).unsqueeze(-1).float()
 
     net = Net()
-    
+
     if torch.cuda.is_available():
         x = x.cuda(0)
         y = y.cuda(0)
         net = net.cuda()
 
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
-    loss_func = torch.nn.MSELoss()  
-    
+    loss_func = torch.nn.MSELoss()
+
     for t in range(num_repeat):
 
         prediction = net(x)     # input x and predict based on x
@@ -81,16 +84,15 @@ def repeat(j):
         if t == num_repeat-1:
             print(loss)
 
-
     # Test the Escanciano method
-    
+
     if torch.cuda.is_available():
         y = y.cpu()
         z = net(x).cpu()
 
-    from wl_regression import OLS  
+    from wl_regression import OLS
     z0 = OLS(x.numpy(), y.numpy()).y_hat()
-    e0 = (z0 - y.detach().numpy()[:,0])
+    e0 = (z0 - y.detach().numpy()[:, 0])
 
     z = net(x)
     e1 = (z-y).detach().numpy()
@@ -110,14 +112,14 @@ def repeat(j):
     end = time.time()
     print(f"{j}-th iter in time {end - start}")
     return rslt
+
 # %%
-import pickle
-from google.colab import files
+
 
 rslt_repeat = [repeat(j) for j in range(100)]
 
 i = time.strftime("%Y%m%d%H")
-with open(f"result-{i}.p", mode = 'wb') as f:
-  pickle.dump(rslt_repeat, f)
+with open(f"result-{i}.p", mode='wb') as f:
+    pickle.dump(rslt_repeat, f)
 
 files.download(f'result-{i}.p')
