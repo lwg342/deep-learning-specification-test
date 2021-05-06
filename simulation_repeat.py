@@ -1,4 +1,11 @@
 # %%
+import sys
+from google.colab import drive
+drive.mount("/content/drive")
+sys.path.append(
+    "/content/drive/My Drive/Colab Notebooks/deep-learning-specification-test")
+sys.path.append("/content/drive/My Drive/Colab Notebooks/python-functions")
+# %%
 import torch
 import torch.nn.functional as F
 import torch.nn as nn

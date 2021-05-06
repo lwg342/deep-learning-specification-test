@@ -9,8 +9,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # %%
 torch.manual_seed(1)    # reproducible
 
-N = 1000
-
+N = 200
 rng = np.random.default_rng()
 x1 = torch.from_numpy(rng.normal(0, 1, N))
 x2 = torch.from_numpy(rng.normal(0, 1, N))
