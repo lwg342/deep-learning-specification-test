@@ -2,29 +2,42 @@ import numpy as np
 import torch
 
 
-def C_resid(e0 , e1, y, T, option = None):
-    y_mat = torch.outer(y, torch.ones(T))
-    d0 = (y_mat - torch.outer(torch.ones(len(y)), e0)).clip(0)
-    d1 = (y_mat - torch.outer(torch.ones(len(y)), e1)).clip(0)
-    C = (1/np.sqrt(T)) * ((d0 - d1).sum(1))
+def C_resid(resid0 , resid1, evals, N, option = None):
+    y_mat = torch.outer(evals, torch.ones(N))
+    d0 = (y_mat - torch.outer(torch.ones(len(evals)), resid0)).clip(0)
+    d1 = (y_mat - torch.outer(torch.ones(len(evals)), resid1)).clip(0)
+    C = (1/np.sqrt(N)) * ((d0 - d1).sum(1))
     if option == "full":    
         return C, d0 ,d1
     else:
         return C
 
 
-def compute_l(x, y, e, T, method="ols"):
+def compute_l(x, y, resid, N, method="ols"):
     if method == "ols":
         A = torch.mean(x,0)
-        B = (torch.matmul(x.transpose(1,0), x)) /T
-        l = (torch.matmul(torch.matmul(A, B), x.transpose(1, 0))) * e
+        B = (torch.matmul(x.transpose(1,0), x)) /N
+        l = torch.matmul(torch.matmul(torch.eye(len(resid))*resid, x),
+                         torch.matmul(A, B))
+    # if method == "ols": wrong with e_t
+        # B = (torch.matmul(x.transpose(1, 0), x)).float()
+        # B2 = torch.matmul(x.transpose(1, 0), resid.reshape(T,1)).float()
+        # l = torch.matmul(x,torch.matmul(torch.inverse(B),B2)).squeeze()
     if method == "deep learning":
-        l = e 
+        l = resid 
     return l
+# def compute_l(x, y, e, T, method="ols", **kwargs):
+#     if method == "ols":
+        
+#         B = (torch.matmul(x.transpose(1,0), x)) /T
+#         l = (torch.matmul(torch.matmul(x, B), x.transpose(1, 0))) * e
+#     if method == "deep learning":
+#         l = e 
+#     return l
 
-def compute_w(x,y,e0, e1,T, methods = ["ols", "deep learning"]):
-    W0 = compute_l(x, y, e0, T, methods[0])
-    W1 = compute_l(x, y, e1, T, methods[1])
+def compute_w(x,y,resid0, resid1,T, methods = ["ols", "deep learning"]):
+    W0 = compute_l(x, y, resid0, T, methods[0])
+    W1 = compute_l(x, y, resid1, T, methods[1])
     W = W0 - W1
     return [W0,W1,W], torch.std(W)
 
@@ -75,11 +88,12 @@ class MLP3(torch.nn.Module):
         return out
 
 class DNN():
-    def __init__(self, model=MLP4, lr=0.0001):
+    def __init__(self, model=MLP4, lr=0.0001, max_epochs = 50):
         self.net = model()
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr= lr)
         self.loss_func = torch.nn.MSELoss()
         self.previous_loss = 1000
+        self.max_epochs = max_epochs
 
     def net_update(self, x, y, batch_size = 1000):
         for t in range(batch_size):
@@ -93,8 +107,8 @@ class DNN():
     def net_combine(self, x, y, batch_size = 1000):
         self.net_update(x,y,batch_size)
         i= 0
-        while (self.previous_loss - self.loss > 0.05 or self.loss > 0.5) and (i < 50):
+        while (self.previous_loss - self.loss > 0.05 or self.loss > 0.5) and (i < self.max_epochs):
             self.previous_loss = self.loss
             self.net_update(x,y,batch_size)
             i = i + 1
-        print(i)
+        # print(i)
