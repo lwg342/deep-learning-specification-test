@@ -14,11 +14,15 @@ def generate_sample(N, k, sigma, reg_func = true_output, device = device):
     y = (reg_func(x) + e).float()
     return x,y,e 
 
-# def ols(y,x, N, k):
-#     x = x.reshape(N,k)
-#     y = y.reshape(N,1)
-#     V = torch.inverse(torch.matmul(x.transpose(1, 0), x)) 
-#     W = torch.matmul(x.transpose(1,0), y)
-#     beta_hat = torch.matmul(V, W)
-#     y_hat = torch.matmul(x, beta_hat).squeeze()
-#     return y_hat, beta_hat
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+def describe_distribution(lst_cc):
+    N = len(lst_cc)
+    t_cc = torch.tensor(lst_cc)
+    fig, ax = plt.subplots()
+    ax = sns.histplot(t_cc, stat="density")
+    ax.set_title(
+        f"sample size : {N}, mean {t_cc.mean(): .2f}, variance {t_cc.var(): .5f}, skew: {stats.skew(t_cc.numpy()) : .3f}, kurtosis : {stats.kurtosis(t_cc.numpy()) : .3f}")
+
