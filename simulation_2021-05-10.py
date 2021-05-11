@@ -1,3 +1,9 @@
+# %% Colab mount
+from google.colab import drive
+from google.colab import files
+import sys
+drive.mount("/content/drive/")
+sys.path.append("/content/drive/My Drive/Colab Notebooks/deep-learning-specification-test/")
 # %% [markdown]
 """ This file tests the null $y = a + e$ against the alternative that 
 $y = a + x \beta + e$"""
@@ -12,10 +18,11 @@ from scipy import stats
 # %% [markdown]
 """Generate samples. """
 # %%
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def reg_func(x, N, k):
-    y_star = torch.ones([N, 1])
+def reg_func(x, N, k , device = device):
+    y_star = torch.ones([N, 1], device = device)
     return y_star
 
 
@@ -34,33 +41,35 @@ x, e, y = gen_sample(reg_func, N, k, sigma, sigma_x)
 
 # %% [markdown]
 """
-Now we follow Escanciano, find the $\hat{e}_{t0}$ and $\hat{e}_{t1}$ and construct $C(y), we plotted some descriptive graphs$
+Now we follow Escanciano, find the $\hat{e}_{t0}$ and $\hat{e}_{t1}$ and construct $C(y)$, we plotted some descriptive graphs
 """
+# %%
 res0 = y - y.mean()
 plt.figure()
-plt.plot(e)
+plt.plot(e.cpu())
 plt.plot(res0)
 
 y_hat = OLS(x, y, N, k).y_hat(add_intercept=True)
 plt.figure()
-plt.scatter(x, y)
-plt.scatter(x, y_hat)
+plt.scatter(x.cpu(), y.cpu())
+plt.scatter(x.cpu(), y_hat.cpu())
 
 res1 = y - y_hat
 plt.figure()
-plt.plot(e)
-plt.plot(res1)
+plt.plot(e.cpu())
+plt.plot(res1.cpu())
 
 res_diff = res0 - res1
 plt.figure()
-plt.plot(res_diff)
+plt.plot(res_diff.cpu())
 
 """Describe the moments"""
 print(f"mean {res_diff.mean(): .5f} , variance {res_diff.var(): .5f}")
 
 # %% [markdown]
-"""Construct $C(y)$"""
-evals = torch.tensor([0.])
+"""Construct $C(y)$ using the Escanciano, et al method by comparing the CDFs of the residuals. """
+# %%
+evals = torch.tensor([0.] , device = device)
 cc = C_resid(res0, res1, evals, N)
 print(cc)
 
@@ -68,15 +77,14 @@ print(cc)
 # %% [markdown]
 """Now we do J iterations and see the distribution of C_resid, under the null hypothesis, it should have a normal distribution but the variance needs estimation"""
 
-
-def simulate_cc(reg_func, N, k, sigma, sigma_x, gen_sample, J):
+# %%
+def simulate_cc(reg_func, N, k, evals, sigma, sigma_x, gen_sample, J):
     lst_cc = []
     for j in range(J):
         x, e, y = gen_sample(reg_func, N, k, sigma, sigma_x)
         evals = torch.tensor([0.])
         res0 = y - y.mean()
         y_hat = OLS(x, y, N, k).y_hat(add_intercept=True)
-        # beta = OLS(x, y, N, k).beta_hat()
         res1 = y - y_hat
         cc = C_resid(res0, res1, evals, N)
         lst_cc += [cc.detach().cpu()]
@@ -96,9 +104,9 @@ def describe(lst_cc):
 
 N, k, sigma, sigma_x = int(1e6), 1, 1, 1
 J = 1000
-lst_cc = simulate_cc(reg_func, N, k, sigma, sigma_x, gen_sample, J)
+lst_cc = simulate_cc(reg_func, N, k, evals, sigma, sigma_x, gen_sample, J)
 
-# %% [markdown]
+# %%
 """Now we analyse the distribution of the resulting list of C_resids"""
                 
 describe(lst_cc)
@@ -106,18 +114,19 @@ describe(lst_cc)
 # %%
 """We test with different sample sizes N"""
 for N in [1000, 2000, 5000, int(1e4), int(1e5), int(2e5), int(1e6), int(2e6)]:
-    lst_cc = simulate_cc(reg_func, N, k, sigma, sigma_x, gen_sample, J)
+    lst_cc = simulate_cc(reg_func, N, k,evals,  sigma, sigma_x, gen_sample, J)
     describe(lst_cc)
 
 
 # %% [markdown]
-"""We also want to test if we can estimate the variance correctly"""
+# We also want to test if we can estimate the variance correctly
+# we compute l0 based on OLS residual from H_0
 
 
+# %%
 N, k, sigma, sigma_x = 1000, 1, 1, 1
 x, e, y = gen_sample(reg_func, N, k, sigma, sigma_x)
 
-"""we compute l0 based on OLS residual from H_0"""
 
 res0 = y - y.mean()
 plt.scatter(x, e)
@@ -147,7 +156,7 @@ print((l0 - l1).var())
 """ Now we find the scaled C, takin into account the estimated sigma_hat"""
 
 
-def simulate_scaled_cc(reg_func, N, k, sigma, sigma_x, gen_sample, J):
+def simulate_scaled_cc(reg_func, N, k, evals, sigma, sigma_x, gen_sample, J):
     lst_cc_scaled = []
     lst_cc = []
     lst_sigma_hat = []
@@ -173,6 +182,14 @@ def simulate_scaled_cc(reg_func, N, k, sigma, sigma_x, gen_sample, J):
 # %%
 J = 1000
 N = int(1e4)
+lst_cc_scaled, lst_sigma_hat, lst_cc = simulate_scaled_cc(reg_func, N, k,evals, sigma, sigma_x, gen_sample, J)
+describe(lst_cc_scaled)
+describe(lst_sigma_hat)
+describe(lst_cc)
+
+# %%
+J = 1000
+N = int(2e4)
 lst_cc_scaled, lst_sigma_hat, lst_cc = simulate_scaled_cc(reg_func, N, k, sigma, sigma_x, gen_sample, J)
 describe(lst_cc_scaled)
 describe(lst_sigma_hat)

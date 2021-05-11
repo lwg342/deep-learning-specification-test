@@ -1,12 +1,14 @@
 import numpy as np
 import torch
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def C_resid(res0, res1, evals, N, option=None):
+def C_resid(res0, res1, evals, N, option=None, device = device):
+
     evals_mat = evals @ torch.ones([1, N])
     l = len(evals)
-    d0 = (evals_mat - (torch.ones([l, 1]) @ res0.T)).clip(0)
-    d1 = (evals_mat - (torch.ones([l, 1]) @ res1.T)).clip(0)
+    d0 = (evals_mat - (torch.ones([l, 1], device = device) @ res0.T)).clip(0)
+    d1 = (evals_mat - (torch.ones([l, 1], device = device) @ res1.T)).clip(0)
     C = (1/np.sqrt(N)) * ((d0 - d1).sum(1))
     if option == "full":
         return C, d0, d1
@@ -16,23 +18,15 @@ def C_resid(res0, res1, evals, N, option=None):
 
 def compute_l(x, y, res, N, method="ols"):
     if method == "ols":
-        A = torch.mean(x, 0).reshape([1, x.shape[1], ])
+        A = torch.mean(x, 0).reshape([1, x.shape[1]])
         V = (x.T@x) / N
         # l = torch.matmul(torch.matmul(torch.eye(len(res))*res, x),
         #  torch.matmul(A, B))
-        V2 = x.T @ torch.diag(res.squeeze())
+        V2 = x.T @ torch.eye(N)@(res)
         l = (A@V@V2).T
     if method == "deep learning":
         l = res
     return l
-# def compute_l(x, y, e, T, method="ols", **kwargs):
-#     if method == "ols":
-
-#         B = (torch.matmul(x.transpose(1,0), x)) /T
-#         l = (torch.matmul(torch.matmul(x, B), x.transpose(1, 0))) * e
-#     if method == "deep learning":
-#         l = e
-#     return l
 
 
 # def compute_w(x, y, resid0, resid1, N, methods=["ols", "deep learning"]):
@@ -92,8 +86,8 @@ class MLP3(torch.nn.Module):
 
 
 class DNN():
-    def __init__(self, k=4, W=4,  model=MLP4, lr=0.001, max_epochs=50):
-        self.net = model(k=k, W=4)
+    def __init__(self, k=4, W=4,  model=MLP4, lr=0.001, max_epochs=50, device = torch.device("cuda" if torch.cuda.is_available() else "cpu")):
+        self.net = model(k=k, W=4).to(device)
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=lr)
         self.loss_func = torch.nn.MSELoss()
         self.previous_loss = 1000
