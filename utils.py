@@ -3,9 +3,9 @@ import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def C_resid(res0, res1, evals, N, option=None, device = device):
+def C_resid(res0, res1, evals, N, option=None, device = device, **kwargs):
 
-    evals_mat = evals @ torch.ones([1, N])
+    evals_mat = evals @ torch.ones([1, N] , device = device)
     l = len(evals)
     d0 = (evals_mat - (torch.ones([l, 1], device = device) @ res0.T)).clip(0)
     d1 = (evals_mat - (torch.ones([l, 1], device = device) @ res1.T)).clip(0)
@@ -22,7 +22,7 @@ def compute_l(x, y, res, N, method="ols"):
         V = (x.T@x) / N
         # l = torch.matmul(torch.matmul(torch.eye(len(res))*res, x),
         #  torch.matmul(A, B))
-        V2 = x.T @ torch.eye(N)@(res)
+        V2 = x.T @ torch.eye(N, device = device)@(res)
         l = (A@V@V2).T
     if method == "deep learning":
         l = res
@@ -116,7 +116,7 @@ class DNN():
 
 
 class OLS():
-    def __init__(self, X: torch.tensor, Y: torch.tensor, N, k):
+    def __init__(self, X: torch.tensor, Y: torch.tensor, N, k, **kwargs):
         """
         X is N*k dimensional and Y is N*1 dimensional. 
         """

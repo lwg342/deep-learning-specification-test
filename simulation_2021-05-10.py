@@ -8,8 +8,7 @@ sys.path.append("/content/drive/My Drive/Colab Notebooks/deep-learning-specifica
 """ This file tests the null $y = a + e$ against the alternative that 
 $y = a + x \beta + e$"""
 # %%
-from utils import compute_l
-from utils import OLS, C_resid
+from utils import OLS, C_resid,  compute_l
 import matplotlib.pyplot as plt
 import torch
 import seaborn as sns
@@ -67,7 +66,7 @@ plt.plot(res_diff.cpu())
 print(f"mean {res_diff.mean(): .5f} , variance {res_diff.var(): .5f}")
 
 # %% [markdown]
-"""Construct $C(y)$ using the Escanciano, et al method by comparing the CDFs of the residuals. """
+# Construct $C(y)$ using the Escanciano, et al method by comparing the CDFs of the residuals.
 # %%
 evals = torch.tensor([0.] , device = device)
 cc = C_resid(res0, res1, evals, N)
@@ -75,14 +74,13 @@ print(cc)
 
 
 # %% [markdown]
-"""Now we do J iterations and see the distribution of C_resid, under the null hypothesis, it should have a normal distribution but the variance needs estimation"""
+# Now we do J iterations and see the distribution of C_resid, under the null hypothesis, it should have a normal distribution but the variance needs estimation
 
 # %%
 def simulate_cc(reg_func, N, k, evals, sigma, sigma_x, gen_sample, J):
     lst_cc = []
     for j in range(J):
         x, e, y = gen_sample(reg_func, N, k, sigma, sigma_x)
-        evals = torch.tensor([0.])
         res0 = y - y.mean()
         y_hat = OLS(x, y, N, k).y_hat(add_intercept=True)
         res1 = y - y_hat

@@ -26,6 +26,7 @@ from wl_regression import OLS
 z0 = torch.tensor(OLS(x.numpy(), y.numpy()).y_hat())
 e0 = (z0 - y).detach()
 
+print(f"the mean is {cm_lst.mean()}")
 z = M.net(x)
 e1 = (z.squeeze()-y).detach().float()
     
@@ -57,7 +58,3 @@ W, sigma_hat = utils.compute_w(x,y,e0,e1,N)
 # rslt =utils.test_statistic(C, N, sigma_hat)
 rslt =utils.test_statistic(C, N, sigma_hat, "KS", C1)
 print(sigma_hat, rslt)
-# %%
-# %%
-
-# %%
